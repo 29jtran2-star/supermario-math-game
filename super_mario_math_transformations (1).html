@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mario Math Transformations</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            touch-action: manipulation;
+        }
+        .pixel-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+        canvas {
+            image-rendering: pixelated;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+        }
+        .touch-btn {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-2 sm:p-4 bg-slate-900">
+
+    <!-- Top Header -->
+    <header class="w-full max-w-4xl text-center my-2">
+        <h1 class="pixel-font text-xl sm:text-2xl text-yellow-400 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] mb-1">
+            SUPER MARIO MATH: TRANSFORMATIONS
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-300">
+            Learn <span class="text-red-400 font-bold">Translation</span>, 
+            <span class="text-yellow-300 font-bold">Rotation</span>, & 
+            <span class="text-cyan-400 font-bold">Reflection</span> in Action!
+        </p>
+    </header>
+
+    <!-- HUD Info Stats Bar -->
+    <div class="w-full max-w-4xl bg-slate-800 border-2 border-slate-700 rounded-xl p-3 mb-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs sm:text-sm shadow-lg">
+        <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-700 flex items-center justify-between">
+            <span class="text-yellow-400 font-bold">🪙 COINS:</span>
+            <span id="hud-coins" class="pixel-font text-white">0</span>
+        </div>
+        <div class="bg-slate-900/80 p-2 rounded-lg border border-red-500/40 flex items-center justify-between">
+            <span class="text-red-400 font-bold">↔️ SLIDES:</span>
+            <span id="hud-translations" class="pixel-font text-white">0</span>
+        </div>
+        <div class="bg-slate-900/80 p-2 rounded-lg border border-yellow-500/40 flex items-center justify-between">
+            <span class="text-yellow-300 font-bold">🔄 SPINS:</span>
+            <span id="hud-rotations" class="pixel-font text-white">0</span>
+        </div>
+        <div class="bg-slate-900/80 p-2 rounded-lg border border-cyan-500/40 flex items-center justify-between">
+            <span class="text-cyan-400 font-bold">🪞 MIRROR:</span>
+            <span id="hud-reflection" class="pixel-font text-cyan-300">ACTIVE</span>
+        </div>
+    </div>
+
+    <!-- Main Game Canvas Container -->
+    <div class="relative w-full max-w-4xl flex justify-center items-center">
+        <canvas id="gameCanvas" width="800" height="480" class="w-full h-auto max-w-full rounded-xl border-4 border-slate-700 bg-sky-400"></canvas>
+        
+        <!-- Interactive Overlay Banner on Canvas -->
+        <div id="transformation-banner" class="absolute top-3 left-1/2 transform -translate-x-1/2 bg-black/85 border-2 border-yellow-400 text-yellow-300 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold shadow-2xl transition-all duration-300 opacity-0 pointer-events-none text-center min-w-[280px]">
+            Ready to explore transformations!
+        </div>
+    </div>
+
+    <!-- Chromebook On-Screen Touch / Click Controls & Reset Button -->
+    <div class="w-full max-w-4xl mt-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <!-- Control Info -->
+        <div class="text-xs text-slate-400 text-center sm:text-left">
+            <span class="font-bold text-slate-200">Controls:</span> Use <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-600 text-slate-200">←</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-600 text-slate-200">→</kbd> or <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-600 text-slate-200">A</kbd><kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-600 text-slate-200">D</kbd> to move, <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-600 text-slate-200">Space</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-600 text-slate-200">↑</kbd> to Jump!
+        </div>
+
+        <!-- Touch/Click Buttons for Chromebook screens -->
+        <div class="flex items-center gap-2">
+            <button id="btn-left" class="touch-btn bg-slate-700 hover:bg-slate-600 active:bg-slate-500 text-white font-bold px-4 py-2.5 rounded-lg border border-slate-500 shadow active:scale-95 transition">
+                ⬅️ LEFT
+            </button>
+            <button id="btn-right" class="touch-btn bg-slate-700 hover:bg-slate-600 active:bg-slate-500 text-white font-bold px-4 py-2.5 rounded-lg border border-slate-500 shadow active:scale-95 transition">
+                RIGHT ➡️
+            </button>
+            <button id="btn-jump" class="touch-btn bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-bold px-5 py-2.5 rounded-lg border border-red-400 shadow active:scale-95 transition pixel-font text-xs">
+                JUMP ⬆️
+            </button>
+            <button id="btn-reset" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-semibold px-3 py-2.5 rounded-lg border border-emerald-400 shadow transition text-xs">
+                🔄 Reset Level
+            </button>
+        </div>
+    </div>
+
+    <!-- Math Explanations Guide for Classmates/Teachers -->
+    <div class="w-full max-w-4xl bg-slate-800/80 border border-slate-700 rounded-xl p-4 mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
+        <div class="bg-slate-900/60 p-3 rounded-lg border-l-4 border-red-500">
+            <h3 class="font-bold text-red-400 text-sm mb-1 flex items-center gap-1">
+                <span>↔️</span> 1. TRANSLATION (Slide/Shift)
+            </h3>
+            <p>Moving a shape without flipping or spinning it. Jump on the <strong>Red Mushroom</strong> to slide horizontally ($\Delta x$), or step on the <strong>Blue Mushroom</strong> to lift straight up ($\Delta y$)!</p>
+        </div>
+        <div class="bg-slate-900/60 p-3 rounded-lg border-l-4 border-yellow-400">
+            <h3 class="font-bold text-yellow-300 text-sm mb-1 flex items-center gap-1">
+                <span>🔄</span> 2. ROTATION (Turn around a point)
+            </h3>
+            <p>Spinning an object around its central point. Bump the <strong>Super Stars</strong> from below to watch them spin $360^\circ \times 3 = 1080^\circ$ total before you collect them!</p>
+        </div>
+        <div class="bg-slate-900/60 p-3 rounded-lg border-l-4 border-cyan-400">
+            <h3 class="font-bold text-cyan-300 text-sm mb-1 flex items-center gap-1">
+                <span>🪞</span> 3. REFLECTION (Mirror Image)
+            </h3>
+            <p>Flipping an object across a reflection axis. Watch Mario's <strong>horizontal shadow mirror</strong> across the line ($x = 400$) and his <strong>vertical flipped image</strong> in the bottom water lake!</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game State Variables
+        let coinsCollected = 0;
+        let translationsTriggered = 0;
+        let rotationsTriggered = 0;
+
+        // Banner Timeout
+        let bannerTimer = null;
+
+        function showBanner(text, duration = 3000) {
+            const banner = document.getElementById('transformation-banner');
+            banner.innerHTML = text;
+            banner.classList.remove('opacity-0');
+            banner.classList.add('opacity-100');
+            if (bannerTimer) clearTimeout(bannerTimer);
+            bannerTimer = setTimeout(() => {
+                banner.classList.remove('opacity-100');
+                banner.classList.add('opacity-0');
+            }, duration);
+        }
+
+        const keys = {
+            left: false,
+            right: false,
+            up: false
+        };
+
+        // Keyboard listeners
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') {
+                if (!keys.up) mario.jump();
+                keys.up = true;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') keys.up = false;
+        });
+
+        // Touch / UI Mouse button listeners for Chromebook
+        function setupTouchButton(id, keyProp, action = null) {
+            const btn = document.getElementById(id);
+            const start = (e) => {
+                e.preventDefault();
+                if (action) action();
+                else keys[keyProp] = true;
+            };
+            const end = (e) => {
+                e.preventDefault();
+                if (!action) keys[keyProp] = false;
+            };
+            btn.addEventListener('touchstart', start);
+            btn.addEventListener('touchend', end);
+            btn.addEventListener('mousedown', start);
+            btn.addEventListener('mouseup', end);
+            btn.addEventListener('mouseleave', end);
+        }
+
+        setupTouchButton('btn-left', 'left');
+        setupTouchButton('btn-right', 'right');
+        setupTouchButton('btn-jump', 'up', () => mario.jump());
+        document.getElementById('btn-reset').addEventListener('click', () => resetGame());
+
+        // Ground & Level Platforms
+        const groundY = 380;
+        const mirrorLineX = 400; // Line of Reflection
+
+        const platforms = [
+            // Ground left
+            { x: 0, y: groundY, w: 320, h: 40, type: 'ground' },
+            // Ground right
+            { x: 480, y: groundY, w: 320, h: 40, type: 'ground' },
+            // Floating brick platforms
+            { x: 120, y: 270, w: 100, h: 20, type: 'brick' },
+            { x: 300, y: 220, w: 80, h: 20, type: 'brick' },
+            { x: 580, y: 250, w: 120, h: 20, type: 'brick' },
+            { x: 450, y: 160, w: 100, h: 20, type: 'brick' }
+        ];
+
+        // Coins
+        let coins = [
+            { x: 140, y: 230, collected: false },
+            { x: 170, y: 230, collected: false },
+            { x: 330, y: 180, collected: false },
+            { x: 610, y: 210, collected: false },
+            { x: 650, y: 210, collected: false },
+            { x: 480, y: 120, collected: false }
+        ];
+
+        const mario = {
+            x: 50,
+            y: 300,
+            w: 28,
+            h: 36,
+            vx: 0,
+            vy: 0,
+            speed: 3.5,
+            jumpPower: -10.5,
+            gravity: 0.45,
+            grounded: false,
+            facing: 'right',
+            animFrame: 0,
+            ridingMushroom: null,
+
+            reset() {
+                this.x = 50;
+                this.y = 300;
+                this.vx = 0;
+                this.vy = 0;
+                this.grounded = false;
+                this.facing = 'right';
+                this.ridingMushroom = null;
+            },
+
+            jump() {
+                if (this.grounded) {
+                    this.vy = this.jumpPower;
+                    this.grounded = false;
+                    this.ridingMushroom = null;
+                }
+            },
+
+            update() {
+                // Horizontal Controls
+                if (keys.left) {
+                    this.vx = -this.speed;
+                    this.facing = 'left';
+                } else if (keys.right) {
+                    this.vx = this.speed;
+                    this.facing = 'right';
+                } else {
+                    this.vx = 0;
+                }
+
+                // Apply Gravity
+                this.vy += this.gravity;
+
+                // Move horizontally
+                this.x += this.vx;
+                this.checkHorizontalCollisions();
+
+                // Move vertically
+                this.y += this.vy;
+                this.grounded = false;
+                this.checkVerticalCollisions();
+
+                // Bound to canvas edges
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.w > canvas.width) this.x = canvas.width - this.w;
+
+                // Reset if fallen into water lake gap
+                if (this.y > canvas.height + 50) {
+                    showBanner("⚠️ Mario fell into the lake! Resetting position...");
+                    this.reset();
+                }
+            },
+
+            checkHorizontalCollisions() {
+                for (let p of platforms) {
+                    if (this.x < p.x + p.w && this.x + this.w > p.x && this.y < p.y + p.h && this.y + this.h > p.y) {
+                        if (this.vx > 0) this.x = p.x - this.w;
+                        if (this.vx < 0) this.x = p.x + p.w;
+                    }
+                }
+            },
+
+            checkVerticalCollisions() {
+                for (let p of platforms) {
+                    if (this.x < p.x + p.w && this.x + this.w > p.x && this.y < p.y + p.h && this.y + this.h > p.y) {
+                        if (this.vy > 0 && this.y + this.h - this.vy <= p.y + 10) {
+                            this.y = p.y - this.h;
+                            this.vy = 0;
+                            this.grounded = true;
+                        } else if (this.vy < 0 && this.y - this.vy >= p.y + p.h - 10) {
+                            this.y = p.y + p.h;
+                            this.vy = 0;
+                        }
+                    }
+                }
+            }
+        };
+
+        // 1. TRANSLATION Mushrooms
+        const mushrooms = [
+            {
+                id: 'slide-1',
+                type: 'slide', // Red Mushroom: horizontal slide translation
+                x: 220,
+                y: groundY - 28,
+                startX: 220,
+                startY: groundY - 28,
+                w: 28,
+                h: 28,
+                vx: 0,
+                targetX: 380,
+                isTranslating: false,
+                label: 'Red Slide Mushroom'
+            },
+            {
+                id: 'elevator-1',
+                type: 'elevator', // Blue Mushroom: vertical elevator translation
+                x: 520,
+                y: groundY - 28,
+                startX: 520,
+                startY: groundY - 28,
+                w: 28,
+                h: 28,
+                vy: 0,
+                targetY: 190,
+                isTranslating: false,
+                label: 'Blue Lift Mushroom'
+            }
+        ];
+
+        // 2. ROTATION Super Stars
+        const stars = [
+            {
+                x: 160,
+                y: 190,
+                w: 30,
+                h: 30,
+                angle: 0,
+                isRotating: false,
+                rotationsLeft: 0,
+                collected: false,
+                totalSpinsCount: 0
+            },
+            {
+                x: 620,
+                y: 170,
+                w: 30,
+                h: 30,
+                angle: 0,
+                isRotating: false,
+                rotationsLeft: 0,
+                collected: false,
+                totalSpinsCount: 0
+            }
+        ];
+
+        function updateMushrooms() {
+            mushrooms.forEach(m => {
+                // Check if Mario lands on top of mushroom
+                const isMarioOnTop = (
+                    mario.x + mario.w > m.x &&
+                    mario.x < m.x + m.w &&
+                    Math.abs((mario.y + mario.h) - m.y) < 6 &&
+                    mario.vy >= 0
+                );
+
+                if (isMarioOnTop && !m.isTranslating) {
+                    m.isTranslating = true;
+                    translationsTriggered++;
+                    document.getElementById('hud-translations').innerText = translationsTriggered;
+
+                    if (m.type === 'slide') {
+                        showBanner(`↔️ TRANSLATION: Vector (dx: +160, dy: 0) — Mushroom slides Mario across ground!`);
+                    } else if (m.type === 'elevator') {
+                        showBanner(`⬆️ TRANSLATION: Vector (dx: 0, dy: -160) — Mushroom lifts Mario up!`);
+                    }
+                }
+
+                // Handle Translation Movement Logic
+                if (m.isTranslating) {
+                    if (m.type === 'slide') {
+                        if (m.x < m.targetX) {
+                            const speed = 2;
+                            m.x += speed;
+                            if (isMarioOnTop) mario.x += speed; // Move Mario along (Translation)
+                        } else {
+                            // Reached destination, pause and return
+                            setTimeout(() => {
+                                m.x = m.startX;
+                                m.isTranslating = false;
+                            }, 2000);
+                        }
+                    } else if (m.type === 'elevator') {
+                        if (m.y > m.targetY) {
+                            const speed = 1.8;
+                            m.y -= speed;
+                            if (isMarioOnTop) mario.y -= speed; // Carry Mario upward (Translation)
+                        } else {
+                            // Reached top destination, reset after delay
+                            setTimeout(() => {
+                                m.y = m.startY;
+                                m.isTranslating = false;
+                            }, 2500);
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateStars() {
+            stars.forEach(s => {
+                if (s.collected) return;
+
+                // Check Mario bumping star from below or jumping into it
+                const isHitByMario = (
+                    mario.x < s.x + s.w &&
+                    mario.x + mario.w > s.x &&
+                    mario.y < s.y + s.h &&
+                    mario.y + mario.h > s.y
+                );
+
+                if (isHitByMario && !s.isRotating) {
+                    s.isRotating = true;
+                    s.rotationsLeft = 3; // 3 full 360 degree spins
+                    rotationsTriggered++;
+                    document.getElementById('hud-rotations').innerText = rotationsTriggered;
+                    showBanner(`🔄 ROTATION: Spinning Star 360° x 3 = 1080° Total Rotation!`);
+                }
+
+                // Execute Animated Rotation Sequence
+                if (s.isRotating) {
+                    s.angle += 12; // Rotate step
+                    if (s.angle >= 360) {
+                        s.angle -= 360;
+                        s.rotationsLeft--;
+                        if (s.rotationsLeft <= 0) {
+                            s.angle = 0;
+                            s.isRotating = false;
+                            s.collected = true;
+                            coinsCollected += 5;
+                            document.getElementById('hud-coins').innerText = coinsCollected;
+                            showBanner(`🌟 STAR COLLECTED! Rotated 1080° completely! (+5 Coins)`);
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCoins() {
+            coins.forEach(c => {
+                if (!c.collected) {
+                    if (mario.x < c.x + 16 && mario.x + mario.w > c.x &&
+                        mario.y < c.y + 16 && mario.y + mario.h > c.y) {
+                        c.collected = true;
+                        coinsCollected++;
+                        document.getElementById('hud-coins').innerText = coinsCollected;
+                    }
+                }
+            });
+        }
+
+        function resetGame() {
+            mario.reset();
+            mushrooms.forEach(m => {
+                m.x = m.startX;
+                m.y = m.startY;
+                m.isTranslating = false;
+            });
+            stars.forEach(s => {
+                s.collected = false;
+                s.isRotating = false;
+                s.angle = 0;
+            });
+            coins.forEach(c => c.collected = false);
+            showBanner("Level Reset! Practice Translation, Rotation, & Reflection!");
+        }
+
+        function drawBackground() {
+            // Sky Gradient
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGradient.addColorStop(0, '#38bdf8');
+            skyGradient.addColorStop(0.7, '#7dd3fc');
+            skyGradient.addColorStop(1, '#bae6fd');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Fluffy Mario Clouds
+            drawCloud(70, 80);
+            drawCloud(320, 60);
+            drawCloud(650, 90);
+
+            // Water Lake at bottom gap (Between x=320 and x=480)
+            const lakeX = 320;
+            const lakeW = 160;
+            const lakeY = groundY;
+            const lakeH = canvas.height - groundY;
+
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(lakeX, lakeY, lakeW, lakeH);
+
+            // Animated water waves
+            ctx.fillStyle = '#38bdf8';
+            const time = Date.now() * 0.003;
+            for (let i = 0; i < lakeW; i += 20) {
+                const waveY = lakeY + Math.sin(time + i) * 3;
+                ctx.fillRect(lakeX + i, waveY, 12, 3);
+            }
+
+            // Water Lake Reflection Label (Vertical Flip Reflection)
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🪞 MIRROR LAKE', lakeX + lakeW / 2, lakeY + 22);
+            ctx.fillStyle = '#e0f2fe';
+            ctx.fillText('Vertical Reflection (y\' = -y)', lakeX + lakeW / 2, lakeY + 36);
+        }
+
+        function drawCloud(cx, cy) {
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+            ctx.arc(cx + 15, cy - 8, 14, 0, Math.PI * 2);
+            ctx.arc(cx + 30, cy, 18, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawPlatforms() {
+            platforms.forEach(p => {
+                if (p.type === 'ground') {
+                    // Grass top line
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fillRect(p.x, p.y, p.w, 8);
+                    // Ground dirt body
+                    ctx.fillStyle = '#b45309';
+                    ctx.fillRect(p.x, p.y + 8, p.w, p.h - 8);
+                    
+                    // Dirt brick texture lines
+                    ctx.strokeStyle = '#78350f';
+                    ctx.lineWidth = 1;
+                    for (let x = p.x; x < p.x + p.w; x += 16) {
+                        ctx.strokeRect(x, p.y + 8, 16, 16);
+                    }
+                } else if (p.type === 'brick') {
+                    // Question block style brick platform
+                    ctx.fillStyle = '#ea580c';
+                    ctx.fillRect(p.x, p.y, p.w, p.h);
+                    ctx.strokeStyle = '#7c2d12';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(p.x, p.y, p.w, p.h);
+                    
+                    // Brick line detail
+                    for (let x = p.x; x < p.x + p.w; x += 20) {
+                        ctx.strokeRect(x, p.y, 20, p.h);
+                    }
+                }
+            });
+        }
+
+        function drawReflectionLine() {
+            // Glowing vertical Line of Reflection (x = 400)
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([8, 6]);
+            ctx.beginPath();
+            ctx.moveTo(mirrorLineX, 0);
+            ctx.lineTo(mirrorLineX, groundY);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash
+
+            // Reflection Axis Header Text
+            ctx.fillStyle = '#0891b2';
+            ctx.fillRect(mirrorLineX - 90, 8, 180, 22);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('LINE OF REFLECTION (x = 400)', mirrorLineX, 22);
+        }
+
+        function drawMarioSprite(x, y, w, h, facing, opacity = 1.0, isFlippedVertically = false) {
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            
+            ctx.translate(x + w / 2, y + h / 2);
+
+            // Vertical Flip (for lake reflection)
+            if (isFlippedVertically) {
+                ctx.scale(1, -1);
+            }
+
+            // Horizontal Flip (facing left vs right)
+            if (facing === 'left') {
+                ctx.scale(-1, 1);
+            }
+
+            // Draw Pixel Art Mario
+            const halfW = w / 2;
+            const halfH = h / 2;
+
+            // Red Hat
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(-halfW + 4, -halfH, w - 4, 8);
+            ctx.fillRect(-halfW + 8, -halfH + 4, w - 2, 4);
+
+            // Skin Face
+            ctx.fillStyle = '#fde047';
+            ctx.fillRect(-halfW + 6, -halfH + 8, 16, 10);
+            // Eye & Mustache
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(halfW - 10, -halfH + 10, 3, 4); // Eye
+            ctx.fillRect(-halfW + 8, -halfH + 14, 14, 4); // Mustache
+
+            // Blue Overalls / Shirt
+            ctx.fillStyle = '#2563eb';
+            ctx.fillRect(-halfW + 4, -halfH + 18, w - 8, 12);
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(-halfW + 6, -halfH + 18, w - 12, 6); // Red Shirt inner
+
+            // Shoes
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(-halfW + 2, halfH - 6, 10, 6);
+            ctx.fillRect(halfW - 12, halfH - 6, 10, 6);
+
+            ctx.restore();
+        }
+
+        function drawMarioReflections() {
+            // 1. HORIZONTAL REFLECTION (Line x = 400 Mirror Shadow/Clone)
+            // Reflection formula: x' = 2 * mirrorLineX - (mario.x + mario.w)
+            const reflectedX = 2 * mirrorLineX - (mario.x + mario.w);
+            const reflectedFacing = mario.facing === 'right' ? 'left' : 'right';
+
+            // Draw Mirrored Clone Sprite across line
+            drawMarioSprite(reflectedX, mario.y, mario.w, mario.h, reflectedFacing, 0.45, false);
+
+            // Draw visual connecting mirror vector line
+            ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(mario.x + mario.w / 2, mario.y + mario.h / 2);
+            ctx.lineTo(reflectedX + mario.w / 2, mario.y + mario.h / 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Label on mirrored clone
+            ctx.fillStyle = '#06b6d4';
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Reflected Clone (x\' = -x)', reflectedX + mario.w / 2, mario.y - 8);
+
+            // 2. VERTICAL WATER LAKE REFLECTION
+            // If Mario is near or over the lake area (x around 280 to 520)
+            if (mario.x > 250 && mario.x < 530) {
+                const lakeSurfaceY = groundY;
+                const distAboveWater = lakeSurfaceY - mario.y;
+                const waterReflectedY = lakeSurfaceY + distAboveWater - mario.h + 10;
+
+                // Draw Upside-down flipped Mario in water
+                drawMarioSprite(mario.x, waterReflectedY, mario.w, mario.h, mario.facing, 0.35, true);
+            }
+        }
+
+        function drawMushrooms() {
+            mushrooms.forEach(m => {
+                ctx.save();
+                ctx.translate(m.x, m.y);
+
+                // Mushroom Cap
+                ctx.fillStyle = m.type === 'slide' ? '#ef4444' : '#3b82f6'; // Red vs Blue
+                ctx.beginPath();
+                ctx.arc(m.w / 2, 12, 14, Math.PI, 0, false);
+                ctx.fill();
+
+                // Cap White Dots
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(m.w / 2 - 6, 8, 3, 0, Math.PI * 2);
+                ctx.arc(m.w / 2 + 6, 8, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Mushroom Stem
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(6, 12, m.w - 12, 14);
+
+                // Eyes
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(9, 15, 2, 5);
+                ctx.fillRect(m.w - 11, 15, 2, 5);
+
+                ctx.restore();
+
+                // Vector Arrow overlay on translating mushrooms
+                if (m.isTranslating) {
+                    ctx.strokeStyle = m.type === 'slide' ? '#ef4444' : '#3b82f6';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    if (m.type === 'slide') {
+                        // Horizontal arrow
+                        ctx.moveTo(m.x, m.y - 6);
+                        ctx.lineTo(m.x + 30, m.y - 6);
+                        ctx.lineTo(m.x + 24, m.y - 10);
+                    } else {
+                        // Vertical arrow
+                        ctx.moveTo(m.x + m.w / 2, m.y);
+                        ctx.lineTo(m.x + m.w / 2, m.y - 25);
+                        ctx.lineTo(m.x + m.w / 2 - 4, m.y - 18);
+                    }
+                    ctx.stroke();
+                }
+
+                // Label tag
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '9px sans-serif';
+                ctx.textAlign = 'center';
+                const actionText = m.type === 'slide' ? 'Slide (Translation)' : 'Elevator (Translation)';
+                ctx.fillText(actionText, m.x + m.w / 2, m.y - 12);
+            });
+        }
+
+        function drawStars() {
+            stars.forEach(s => {
+                if (s.collected) return;
+
+                ctx.save();
+                // Translate origin to center of star for rotation transformation!
+                ctx.translate(s.x + s.w / 2, s.y + s.h / 2);
+                ctx.rotate((s.angle * Math.PI) / 180);
+
+                // Draw 5-Point Super Star
+                ctx.fillStyle = '#facc15';
+                ctx.strokeStyle = '#ca8a04';
+                ctx.lineWidth = 2;
+
+                ctx.beginPath();
+                const points = 5;
+                const outerRadius = 15;
+                const innerRadius = 7;
+                for (let i = 0; i < points * 2; i++) {
+                    const r = i % 2 === 0 ? outerRadius : innerRadius;
+                    const a = (i * Math.PI) / points - Math.PI / 2;
+                    const px = r * Math.cos(a);
+                    const py = r * Math.sin(a);
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Eyes on Star
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(-4, -3, 2, 6);
+                ctx.fillRect(2, -3, 2, 6);
+
+                ctx.restore();
+
+                // Draw Rotation Angle HUD popup above star
+                if (s.isRotating) {
+                    ctx.fillStyle = '#fef08a';
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`🔄 ${Math.round(s.angle)}°`, s.x + s.w / 2, s.y - 12);
+                } else {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '9px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Spin 360° Star', s.x + s.w / 2, s.y - 8);
+                }
+            });
+        }
+
+        function drawCoins() {
+            coins.forEach(c => {
+                if (!c.collected) {
+                    ctx.fillStyle = '#eab308';
+                    ctx.beginPath();
+                    ctx.arc(c.x + 8, c.y + 8, 7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#ca8a04';
+                    ctx.stroke();
+
+                    // Inner detail
+                    ctx.fillStyle = '#fef08a';
+                    ctx.fillRect(c.x + 7, c.y + 4, 2, 8);
+                }
+            });
+        }
+
+        function render() {
+            // Clear Frame
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Update Game Physics & State
+            mario.update();
+            updateMushrooms();
+            updateStars();
+            updateCoins();
+
+            // 2. Render Layers
+            drawBackground();
+            drawPlatforms();
+            drawReflectionLine();
+            drawCoins();
+            drawMushrooms();
+            drawStars();
+
+            // 3. Render Mario & Transformation Reflections
+            drawMarioReflections();
+            drawMarioSprite(mario.x, mario.y, mario.w, mario.h, mario.facing, 1.0, false);
+
+            // Continuous animation loop
+            requestAnimationFrame(render);
+        }
+
+        // Start game when page loads
+        window.onload = function() {
+            render();
+            showBanner("Welcome! Jump on mushrooms (Translation) & bump stars (Rotation)!");
+        };
+    </script>
+</body>
+</html>
